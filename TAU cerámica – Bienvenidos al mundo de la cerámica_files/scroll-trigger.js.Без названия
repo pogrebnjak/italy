@@ -1,0 +1,137 @@
+// Importa la función necesaria para pre-cargar imágenes
+import { preloadImages } from './utils.js';
+
+// Define una variable para almacenar el objeto de desplazamiento suave Lenis
+let lenis;
+
+// Función para inicializar el desplazamiento suave
+const initSmoothScrolling = () => {
+    try {
+        // Instancia el objeto Lenis con propiedades especificadas
+        lenis = new Lenis({
+            lerp: 0.1, // Valores más bajos crean un efecto de desplazamiento más suave
+            smoothWheel: true // Habilita el desplazamiento suave para eventos de rueda del mouse
+        });
+
+        // Actualiza ScrollTrigger cada vez que el usuario se desplaza
+        lenis.on('scroll', () => ScrollTrigger.update());
+
+        // Define una función para ejecutar en cada frame de animación
+        const scrollFn = (time) => {
+            lenis.raf(time); // Ejecuta el método requestAnimationFrame de Lenis
+            requestAnimationFrame(scrollFn); // Llama recursivamente a scrollFn en cada frame
+        };
+        // Inicia el bucle de frame de animación
+        requestAnimationFrame(scrollFn);
+    } catch (error) {
+        console.error('Error initializing smooth scrolling:', error);
+    }
+};
+
+// Función para activar animaciones Flip al desplazarse
+const triggerFlipOnScroll = (galleryEl, options) => {
+    if (!galleryEl) {
+        return;
+    }
+
+    try {
+        // Configuración predeterminada para Flip y ScrollTrigger
+        let settings = {
+            flip: {
+                absoluteOnLeave: false,
+                absolute: false,
+                scale: true,
+                simple: true,
+            },
+            scrollTrigger: {
+                start: 'center center',
+                end: '+=100%',
+            },
+            stagger: 0
+        };
+
+        // Mezcla la configuración predeterminada con las opciones proporcionadas
+        settings = Object.assign({}, settings, options);
+        
+        // Selecciona elementos dentro de la galería que se animarán
+        const galleryCaption = galleryEl.querySelector('.caption');
+        const galleryItems = galleryEl.querySelectorAll('.gallery__item');
+        const galleryItemsInner = [...galleryItems].map(item => item.children.length > 0 ? [...item.children] : []).flat();
+        
+        // Agrega temporalmente la clase final para capturar el estado final
+        galleryEl.classList.add('gallery--switch');
+        const flipstate = Flip.getState([galleryItems, galleryCaption], {props: 'filter, opacity'});
+
+        // Quita la clase final para revertir al estado inicial
+        galleryEl.classList.remove('gallery--switch');
+        
+        // Crea la línea de tiempo de animación Flip
+        const tl = Flip.to(flipstate, {
+            ease: 'none',
+            absoluteOnLeave: settings.flip.absoluteOnLeave,
+            absolute: settings.flip.absolute,
+            scale: settings.flip.scale,
+            simple: settings.flip.simple,
+            scrollTrigger: {
+                trigger: galleryEl,
+                start: settings.scrollTrigger.start,
+                end: settings.scrollTrigger.end,
+                pin: galleryEl.parentNode,
+                scrub: true,
+            },
+            stagger: settings.stagger
+        });
+
+        // Si hay elementos internos en los elementos de la galería, animarlos también
+        if (galleryItemsInner.length) {
+            tl.fromTo(galleryItemsInner, {
+                scale: 1.5 // home feel&mix scale img - paula
+            }, {
+                scale: 1,
+                scrollTrigger: {
+                    trigger: galleryEl,
+                    start: settings.scrollTrigger.start,
+                    end: settings.scrollTrigger.end,
+                    scrub: true,
+                },
+            }, 0);
+        }
+    } catch (error) {
+        console.error('Error triggering flip on scroll:', error);
+    }
+};
+
+// Función para aplicar animaciones activadas por el desplazamiento a varias galerías
+const scroll = () => {
+    try {
+        // Define los IDs de las galerías y sus opciones
+        const galleries = [
+            { id: '#gallery-1', options: { flip: { absoluteOnLeave: true, scale: false } } },
+            { id: '#gallery-2' },
+            { id: '#gallery-3', options: { flip: { absolute: true, scale: false }, scrollTrigger: { start: 'center center', end: '+=900%' }, stagger: 0.05 } },
+            { id: '#gallery-4' },
+            { id: '#gallery-5' },
+            { id: '#gallery-6' },
+            { id: '#gallery-7' },
+            { id: '#gallery-8', options: { flip: { scale: false } } },
+            { id: '#gallery-9' },
+        ];
+
+        // Itera a través de las galerías y aplica las animaciones activadas por el desplazamiento
+        galleries.forEach(gallery => {
+            const galleryElement = document.querySelector(gallery.id);
+            triggerFlipOnScroll(galleryElement, gallery.options);
+        });
+    } catch (error) {
+        console.error('Error applying scroll-triggered animations:', error);
+    }
+}
+
+// Pre-carga imágenes, inicializa el desplazamiento suave, aplica animaciones activadas por el desplazamiento, y elimina la clase de carga del body
+preloadImages('.gallery__item').then(() => {
+    initSmoothScrolling();
+    scroll();
+    document.body.classList.remove('loading');
+}).catch(error => {
+    console.error('Error preloading images:', error);
+});

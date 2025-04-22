@@ -1,0 +1,70 @@
+jQuery(document).ready(function ($) {
+  class MainMenu {
+    constructor(el, $) {
+      this.DOM = {};
+      this.DOM.el = el;
+      this.DOM.menu_items = null;
+      this.DOM.current_active_element = null;
+      this.subMenuActiveClass = "sub-menu-active";
+      this.init();
+    }
+    init() {
+      $("#burger_btn").on("click", (event) => {
+        this.toggleMenu();
+      });
+
+      this.DOM.nemu_items = Array.from(
+        this.DOM.el.querySelectorAll(
+          ".menu-header li.menu-item.menu-item-has-children"
+        )
+      );
+      console.log("nemu_items :>> ", this.DOM.nemu_items);
+      this.initEvents();
+    }
+    initEvents() {
+      this.DOM.nemu_items.forEach((element, idx) => {
+        element.addEventListener("click", (el) => {
+          console.log("el :>> ", el.srcElement);
+          let next = el.srcElement.nextElementSibling;
+          let nest = el.srcElement.parentElement;
+          if (next) {
+            //el.preventDefault();
+            this.removeSubMenuClass();
+
+            setTimeout(() => {
+              nest.classList.add(this.subMenuActiveClass);
+              $("#site-header").addClass("site-header-open-submenu");
+            }, 400);
+          }
+        });
+      });
+    }
+    removeSubMenuClass() {
+      this.DOM.nemu_items.forEach((el, idx) => {
+        $(el).removeClass(this.subMenuActiveClass);
+      });
+    }
+    toggleMenu() {
+      const is_open = $("#burger_btn").hasClass("burger-open");
+      if (is_open) this.closeMenu();
+      else this.openMenu();
+    }
+    openMenu() {
+      $("#burger_btn").addClass("burger-open");
+      $("#header-menu").addClass("header-menu-open");
+      $("#site-header").addClass("site-header-open");
+      $("#site-header").addClass("max-zindex");
+      $("#sub-menu-claim").removeClass("hidden");
+      $("#sub-menu-claim").addClass("visible");
+    }
+    closeMenu() {
+      this.removeSubMenuClass();
+      $("#burger_btn").removeClass("burger-open");
+      $("#header-menu").removeClass("header-menu-open");
+      $("#site-header").removeClass("site-header-open");
+      $("#site-header").removeClass("site-header-open-submenu");
+    }
+  }
+
+  new MainMenu(document.querySelector(".menu-header"), $);
+});
